@@ -1,0 +1,62 @@
+// СПРАВКА ПО СТРУКТУРЕ ДАННЫХ И КУРСАМ
+
+// ============ ВАЛЮТЫ (Курсы относительно тенге KZT) ============
+
+Валюта      | Код  | Курс (KZT) | Путь иконки
+------------|------|------------|-----------------------------
+Тенге       | KZT  | 1.00       | assets/images/currencies/kzt.png
+Доллар США  | USD  | 432.50     | assets/images/currencies/usd.png
+Евро        | EUR  | 469.23     | assets/images/currencies/eur.png
+Фунт        | GBP  | 545.67     | assets/images/currencies/gbp.png
+Йена        | JPY  | 2.80       | assets/images/currencies/jpy.png
+Франк       | CHF  | 491.47     | assets/images/currencies/chf.png
+Юань        | CNY  | 59.67      | assets/images/currencies/cny.png
+Рупия       | INR  | 5.18       | assets/images/currencies/inr.png
+Доллар Авс  | AUD  | 282.78     | assets/images/currencies/aud.png
+Доллар Кан  | CAD  | 318.15     | assets/images/currencies/cad.png
+
+// ============ КРИПТОВАЛЮТЫ (Цены в KZT) ============
+
+Крипто          | Код  | Цена (KZT)    | Путь иконки
+----------------|------|---------------|---------------------------
+Bitcoin         | BTC  | 793,617.75    | assets/images/cryptos/btc.png
+Ethereum        | ETH  | 973,125.00    | assets/images/cryptos/eth.png
+Binance Coin    | BNB  | 264,570.00    | assets/images/cryptos/bnb.png
+Cardano         | ADA  | 423.85        | assets/images/cryptos/ada.png
+Solana          | SOL  | 84,540.75     | assets/images/cryptos/sol.png
+Dogecoin        | DOGE | 181.65        | assets/images/cryptos/doge.png
+Litecoin        | LTC  | 55,673.88     | assets/images/cryptos/ltc.png
+Chainlink       | LINK | 12,326.25     | assets/images/cryptos/link.png
+
+// ============ КОД СТРУКТУРЫ ДАННЫХ ============
+
+class CurrencyData {
+  final String symbol;        // Код валюты (USD, EUR, etc.)
+  final String name;          // Название на английском
+  final double rate;          // Курс относительно KZT
+  final String imagePath;     // Путь к PNG/SVG иконке
+  final Color color;          // Фоновый цвет для иконки
+}
+
+class CryptoData {
+  final String symbol;        // Код криптовалюты
+  final String name;          // Название
+  final double price;         // Цена в KZT
+  final String imagePath;     // Путь к PNG/SVG иконке
+  final double change;        // Процент изменения (+ или -)
+  final Color color;          // Фоновый цвет для иконки
+}
+
+// ============ СИСТЕМА ЗАГРУЗКИ ИКОНОК ============
+
+Виджет CurrencyIcon автоматически:
+1. Загружает иконку по пути imagePath
+2. Показывает иконку в цветном контейнере
+3. Если иконка не найдена - показывает серый квадрат с "?" символом
+
+Пример:
+CurrencyIcon(
+  imagePath: 'assets/images/currencies/usd.png',
+  backgroundColor: Color(0xFF00A86B),
+  size: 50,
+)
