@@ -233,7 +233,7 @@ class _HomePageState extends State<HomePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Exchange',
+            'Обмен',
             style: TextStyle(
               color: Colors.white70,
               fontSize: 14,
@@ -328,7 +328,7 @@ class _HomePageState extends State<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'You get',
+                      'Получите',
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.7),
                         fontSize: 12,
@@ -370,7 +370,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               child: const Text(
-                'Exchange Now',
+                'Обменять',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -403,8 +403,9 @@ class _HomePageState extends State<HomePage> {
           children: [
             CurrencyIcon(
               imagePath: currencyMap[value]?.imagePath ?? 'assets/images/currencies/usd.png',
-              backgroundColor: currencyMap[value]?.color ?? const Color(0xFF6C5CE7),
+              backgroundColor: Colors.white,
               size: 32,
+              backgroundOpacity: 0.2,
             ),
             const SizedBox(width: 8),
             Column(
@@ -419,7 +420,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 Text(
-                  isFrom ? 'From' : 'To',
+                  isFrom ? 'Из' : 'В',
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.6),
                     fontSize: 11,
@@ -497,6 +498,7 @@ class _HomePageState extends State<HomePage> {
                             imagePath: currency.imagePath,
                             backgroundColor: currency.color,
                             size: 40,
+                            backgroundOpacity: 0.1,
                           ),
                           const SizedBox(width: 16),
                           Expanded(
@@ -549,7 +551,7 @@ class _HomePageState extends State<HomePage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              'Popular Currencies',
+              'Популярные валюты',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
@@ -566,7 +568,7 @@ class _HomePageState extends State<HomePage> {
                 );
               },
               child: Text(
-                'View all',
+                'Показать все',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -602,6 +604,7 @@ class _HomePageState extends State<HomePage> {
           CurrencyIcon(
             imagePath: currency.imagePath,
             backgroundColor: currency.color,
+            backgroundOpacity: 0.1,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -645,7 +648,7 @@ class _HomePageState extends State<HomePage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              'Popular Crypto',
+              'Популярные криптовалюты',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
@@ -662,7 +665,7 @@ class _HomePageState extends State<HomePage> {
                 );
               },
               child: Text(
-                'View all',
+                'Показать все',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -699,6 +702,7 @@ class _HomePageState extends State<HomePage> {
           CurrencyIcon(
             imagePath: crypto.imagePath,
             backgroundColor: crypto.color,
+            backgroundOpacity: 0.1,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -801,11 +805,13 @@ class CurrencyIcon extends StatelessWidget {
   final String imagePath;
   final Color backgroundColor;
   final double size;
+  final double backgroundOpacity;
 
   const CurrencyIcon({
     required this.imagePath,
     required this.backgroundColor,
     this.size = 50,
+    this.backgroundOpacity = 0.1,
     super.key,
   });
 
@@ -815,7 +821,7 @@ class CurrencyIcon extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: backgroundColor.withOpacity(0.1),
+        color: backgroundColor.withOpacity(backgroundOpacity),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Center(
@@ -947,6 +953,7 @@ class AllCurrenciesPage extends StatelessWidget {
                 CurrencyIcon(
                   imagePath: currency.imagePath,
                   backgroundColor: currency.color,
+                  backgroundOpacity: 0.1,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1085,6 +1092,7 @@ class AllCryptosPage extends StatelessWidget {
                 CurrencyIcon(
                   imagePath: crypto.imagePath,
                   backgroundColor: crypto.color,
+                  backgroundOpacity: 0.1,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
