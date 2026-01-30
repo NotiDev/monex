@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:intl/intl.dart';
 
 void main() {
   runApp(const MyApp());
@@ -32,145 +35,179 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  late Map<String, CurrencyData> currencyMap;
+  late List<CurrencyData> popularCurrencies;
+  late List<CryptoData> popularCryptos;
+  Map<String, double> rates = {};
+  bool isLoading = true;
   String fromCurrency = 'KZT';
   String toCurrency = 'USD';
   final TextEditingController amountController = TextEditingController(text: '100');
   double exchangeRate = 0.0023; // 1 KZT = 0.0023 USD
 
-  final Map<String, CurrencyData> currencyMap = {
-    'KZT': CurrencyData(
-      symbol: 'KZT',
-      name: 'Kazakhstani Tenge',
-      rate: 1.0,
-      imagePath: 'assets/images/currencies/kzt.png',
-      color: const Color(0xFF009900),
-    ),
-    'USD': CurrencyData(
-      symbol: 'USD',
-      name: 'US Dollar',
-      rate: 432.50, // 1 USD = 432.50 KZT
-      imagePath: 'assets/images/currencies/usd.png',
-      color: const Color(0xFF00A86B),
-    ),
-    'EUR': CurrencyData(
-      symbol: 'EUR',
-      name: 'Euro',
-      rate: 469.23, // 1 EUR = 469.23 KZT
-      imagePath: 'assets/images/currencies/eur.png',
-      color: const Color(0xFF003399),
-    ),
-    'GBP': CurrencyData(
-      symbol: 'GBP',
-      name: 'British Pound',
-      rate: 545.67, // 1 GBP = 545.67 KZT
-      imagePath: 'assets/images/currencies/gbp.png',
-      color: const Color(0xFF012169),
-    ),
-    'JPY': CurrencyData(
-      symbol: 'JPY',
-      name: 'Japanese Yen',
-      rate: 2.80, // 1 JPY = 2.80 KZT
-      imagePath: 'assets/images/currencies/jpy.png',
-      color: const Color(0xFFBC002D),
-    ),
-    'CHF': CurrencyData(
-      symbol: 'CHF',
-      name: 'Swiss Franc',
-      rate: 491.47, // 1 CHF = 491.47 KZT
-      imagePath: 'assets/images/currencies/chf.png',
-      color: const Color(0xFFFF0000),
-    ),
-    'CNY': CurrencyData(
-      symbol: 'CNY',
-      name: 'Chinese Yuan',
-      rate: 59.67, // 1 CNY = 59.67 KZT
-      imagePath: 'assets/images/currencies/cny.png',
-      color: const Color(0xFFDE2910),
-    ),
-    'INR': CurrencyData(
-      symbol: 'INR',
-      name: 'Indian Rupee',
-      rate: 5.18, // 1 INR = 5.18 KZT
-      imagePath: 'assets/images/currencies/inr.png',
-      color: const Color(0xFFFFA500),
-    ),
-    'AUD': CurrencyData(
-      symbol: 'AUD',
-      name: 'Australian Dollar',
-      rate: 282.78, // 1 AUD = 282.78 KZT
-      imagePath: 'assets/images/currencies/aud.png',
-      color: const Color(0xFF003399),
-    ),
-  };
+  @override
+  void initState() {
+    super.initState();
+    loadRates();
+  }
 
-  final List<CurrencyData> popularCurrencies = [
-    CurrencyData(
-      symbol: 'USD',
-      name: 'US Dollar',
-      rate: 432.50,
-      imagePath: 'assets/images/currencies/usd.png',
-      color: const Color(0xFF00A86B),
-    ),
-    CurrencyData(
-      symbol: 'EUR',
-      name: 'Euro',
-      rate: 469.23,
-      imagePath: 'assets/images/currencies/eur.png',
-      color: const Color(0xFF003399),
-    ),
-    CurrencyData(
-      symbol: 'GBP',
-      name: 'British Pound',
-      rate: 545.67,
-      imagePath: 'assets/images/currencies/gbp.png',
-      color: const Color(0xFF012169),
-    ),
-    CurrencyData(
-      symbol: 'JPY',
-      name: 'Japanese Yen',
-      rate: 2.80,
-      imagePath: 'assets/images/currencies/jpy.png',
-      color: const Color(0xFFBC002D),
-    ),
-  ];
-
-  final List<CryptoData> popularCryptos = [
-    CryptoData(
-      symbol: 'BTC',
-      name: 'Bitcoin',
-      price: 1835.50 * 432.50, // ~793617.75 KZT
-      imagePath: 'assets/images/cryptos/btc.png',
-      change: 2.5,
-      color: const Color(0xFFF7931A),
-    ),
-    CryptoData(
-      symbol: 'ETH',
-      name: 'Ethereum',
-      price: 2250.00 * 432.50, // ~973125 KZT
-      imagePath: 'assets/images/cryptos/eth.png',
-      change: 3.2,
-      color: const Color(0xFF627EEA),
-    ),
-    CryptoData(
-      symbol: 'BNB',
-      name: 'Binance Coin',
-      price: 612.00 * 432.50, // ~264570 KZT
-      imagePath: 'assets/images/cryptos/bnb.png',
-      change: -1.2,
-      color: const Color(0xFFF3BA2F),
-    ),
-    CryptoData(
-      symbol: 'ADA',
-      name: 'Cardano',
-      price: 0.98 * 432.50, // ~423.85 KZT
-      imagePath: 'assets/images/cryptos/ada.png',
-      change: 1.8,
-      color: const Color(0xFF0033A0),
-    ),
-  ];
+  Future<void> loadRates() async {
+    try {
+      final response = await http.get(Uri.parse('https://open.er-api.com/v6/latest/KZT'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final Map<String, dynamic> ratesData = data['rates'];
+        setState(() {
+          rates = ratesData.map((k, v) => MapEntry(k, v.toDouble()));
+          double usdToKzt = 1 / rates['USD']!;
+          currencyMap = {
+            'KZT': CurrencyData(
+              symbol: 'KZT',
+              name: 'Kazakhstani Tenge',
+              rate: 1.0,
+              imagePath: 'assets/images/currencies/kzt.png',
+              color: const Color(0xFF009900),
+            ),
+            'USD': CurrencyData(
+              symbol: 'USD',
+              name: 'US Dollar',
+              rate: usdToKzt,
+              imagePath: 'assets/images/currencies/usd.png',
+              color: const Color(0xFF00A86B),
+            ),
+            'EUR': CurrencyData(
+              symbol: 'EUR',
+              name: 'Euro',
+              rate: 1 / rates['EUR']!,
+              imagePath: 'assets/images/currencies/eur.png',
+              color: const Color(0xFF003399),
+            ),
+            'GBP': CurrencyData(
+              symbol: 'GBP',
+              name: 'British Pound',
+              rate: 1 / rates['GBP']!,
+              imagePath: 'assets/images/currencies/gbp.png',
+              color: const Color(0xFF012169),
+            ),
+            'JPY': CurrencyData(
+              symbol: 'JPY',
+              name: 'Japanese Yen',
+              rate: 1 / rates['JPY']!,
+              imagePath: 'assets/images/currencies/jpy.png',
+              color: const Color(0xFFBC002D),
+            ),
+            'CHF': CurrencyData(
+              symbol: 'CHF',
+              name: 'Swiss Franc',
+              rate: 1 / rates['CHF']!,
+              imagePath: 'assets/images/currencies/chf.png',
+              color: const Color(0xFFFF0000),
+            ),
+            'CNY': CurrencyData(
+              symbol: 'CNY',
+              name: 'Chinese Yuan',
+              rate: 1 / rates['CNY']!,
+              imagePath: 'assets/images/currencies/cny.png',
+              color: const Color(0xFFDE2910),
+            ),
+            'INR': CurrencyData(
+              symbol: 'INR',
+              name: 'Indian Rupee',
+              rate: 1 / rates['INR']!,
+              imagePath: 'assets/images/currencies/inr.png',
+              color: const Color(0xFFFFA500),
+            ),
+            'AUD': CurrencyData(
+              symbol: 'AUD',
+              name: 'Australian Dollar',
+              rate: 1 / rates['AUD']!,
+              imagePath: 'assets/images/currencies/aud.png',
+              color: const Color(0xFF003399),
+            ),
+          };
+          popularCurrencies = [
+            CurrencyData(
+              symbol: 'USD',
+              name: 'US Dollar',
+              rate: usdToKzt,
+              imagePath: 'assets/images/currencies/usd.png',
+              color: const Color(0xFF00A86B),
+            ),
+            CurrencyData(
+              symbol: 'EUR',
+              name: 'Euro',
+              rate: 1 / rates['EUR']!,
+              imagePath: 'assets/images/currencies/eur.png',
+              color: const Color(0xFF003399),
+            ),
+            CurrencyData(
+              symbol: 'GBP',
+              name: 'British Pound',
+              rate: 1 / rates['GBP']!,
+              imagePath: 'assets/images/currencies/gbp.png',
+              color: const Color(0xFF012169),
+            ),
+            CurrencyData(
+              symbol: 'JPY',
+              name: 'Japanese Yen',
+              rate: 1 / rates['JPY']!,
+              imagePath: 'assets/images/currencies/jpy.png',
+              color: const Color(0xFFBC002D),
+            ),
+          ];
+          popularCryptos = [
+            CryptoData(
+              symbol: 'BTC',
+              name: 'Bitcoin',
+              price: 1835.50 * usdToKzt,
+              imagePath: 'assets/images/cryptos/btc.png',
+              change: 2.5,
+              color: const Color(0xFFF7931A),
+            ),
+            CryptoData(
+              symbol: 'ETH',
+              name: 'Ethereum',
+              price: 2250.00 * usdToKzt,
+              imagePath: 'assets/images/cryptos/eth.png',
+              change: 3.2,
+              color: const Color(0xFF627EEA),
+            ),
+            CryptoData(
+              symbol: 'BNB',
+              name: 'Binance Coin',
+              price: 612.00 * usdToKzt,
+              imagePath: 'assets/images/cryptos/bnb.png',
+              change: -1.2,
+              color: const Color(0xFFF3BA2F),
+            ),
+            CryptoData(
+              symbol: 'ADA',
+              name: 'Cardano',
+              price: 0.98 * usdToKzt,
+              imagePath: 'assets/images/cryptos/ada.png',
+              change: 1.8,
+              color: const Color(0xFF0033A0),
+            ),
+          ];
+          isLoading = false;
+          // Обновить exchangeRate
+          exchangeRate = rates[toCurrency]! / rates[fromCurrency]!;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -336,7 +373,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '$convertedAmount',
+                      NumberFormat('#,##0.00').format(convertedAmount),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
@@ -523,7 +560,7 @@ class _HomePageState extends State<HomePage> {
                             ),
                           ),
                           Text(
-                            '${currency.rate.toStringAsFixed(2)} KZT',
+                            '${NumberFormat('#,##0.00').format(currency.rate)} KZT',
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -629,7 +666,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           Text(
-            '${currency.rate.toStringAsFixed(2)} KZT',
+            '${NumberFormat('#,##0.00').format(currency.rate)} KZT',
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -730,7 +767,7 @@ class _HomePageState extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${crypto.price.toStringAsFixed(0)} KZT',
+                '${NumberFormat('#,##0').format(crypto.price)} KZT',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -857,77 +894,121 @@ class CurrencyIcon extends StatelessWidget {
   }
 }
 
-class AllCurrenciesPage extends StatelessWidget {
+class AllCurrenciesPage extends StatefulWidget {
   const AllCurrenciesPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final List<CurrencyData> allCurrencies = [
-      CurrencyData(
-        symbol: 'USD',
-        name: 'US Dollar',
-        rate: 432.50,
-        imagePath: 'assets/images/currencies/usd.png',
-        color: const Color(0xFF00A86B),
-      ),
-      CurrencyData(
-        symbol: 'EUR',
-        name: 'Euro',
-        rate: 469.23,
-        imagePath: 'assets/images/currencies/eur.png',
-        color: const Color(0xFF003399),
-      ),
-      CurrencyData(
-        symbol: 'GBP',
-        name: 'British Pound',
-        rate: 545.67,
-        imagePath: 'assets/images/currencies/gbp.png',
-        color: const Color(0xFF012169),
-      ),
-      CurrencyData(
-        symbol: 'JPY',
-        name: 'Japanese Yen',
-        rate: 2.80,
-        imagePath: 'assets/images/currencies/jpy.png',
-        color: const Color(0xFFBC002D),
-      ),
-      CurrencyData(
-        symbol: 'CHF',
-        name: 'Swiss Franc',
-        rate: 491.47,
-        imagePath: 'assets/images/currencies/chf.png',
-        color: const Color(0xFFFF0000),
-      ),
-      CurrencyData(
-        symbol: 'CNY',
-        name: 'Chinese Yuan',
-        rate: 59.67,
-        imagePath: 'assets/images/currencies/cny.png',
-        color: const Color(0xFFDE2910),
-      ),
-      CurrencyData(
-        symbol: 'INR',
-        name: 'Indian Rupee',
-        rate: 5.18,
-        imagePath: 'assets/images/currencies/inr.png',
-        color: const Color(0xFFFFA500),
-      ),
-      CurrencyData(
-        symbol: 'AUD',
-        name: 'Australian Dollar',
-        rate: 282.78,
-        imagePath: 'assets/images/currencies/aud.png',
-        color: const Color(0xFF003399),
-      ),
-      CurrencyData(
-        symbol: 'CAD',
-        name: 'Canadian Dollar',
-        rate: 318.15,
-        imagePath: 'assets/images/currencies/cad.png',
-        color: const Color(0xFFFF0000),
-      ),
-    ];
+  State<AllCurrenciesPage> createState() => _AllCurrenciesPageState();
+}
 
+class _AllCurrenciesPageState extends State<AllCurrenciesPage> {
+  Map<String, double> rates = {};
+  bool isLoading = true;
+  late List<CurrencyData> allCurrencies;
+
+  @override
+  void initState() {
+    super.initState();
+    loadRates();
+  }
+
+  Future<void> loadRates() async {
+    try {
+      final response = await http.get(Uri.parse('https://open.er-api.com/v6/latest/KZT'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final Map<String, dynamic> ratesData = data['rates'];
+        setState(() {
+          rates = ratesData.map((k, v) => MapEntry(k, v.toDouble()));
+          double usdToKzt = 1 / rates['USD']!;
+          allCurrencies = [
+            CurrencyData(
+              symbol: 'USD',
+              name: 'US Dollar',
+              rate: usdToKzt,
+              imagePath: 'assets/images/currencies/usd.png',
+              color: const Color(0xFF00A86B),
+            ),
+            CurrencyData(
+              symbol: 'EUR',
+              name: 'Euro',
+              rate: 1 / rates['EUR']!,
+              imagePath: 'assets/images/currencies/eur.png',
+              color: const Color(0xFF003399),
+            ),
+            CurrencyData(
+              symbol: 'GBP',
+              name: 'British Pound',
+              rate: 1 / rates['GBP']!,
+              imagePath: 'assets/images/currencies/gbp.png',
+              color: const Color(0xFF012169),
+            ),
+            CurrencyData(
+              symbol: 'JPY',
+              name: 'Japanese Yen',
+              rate: 1 / rates['JPY']!,
+              imagePath: 'assets/images/currencies/jpy.png',
+              color: const Color(0xFFBC002D),
+            ),
+            CurrencyData(
+              symbol: 'CHF',
+              name: 'Swiss Franc',
+              rate: 1 / rates['CHF']!,
+              imagePath: 'assets/images/currencies/chf.png',
+              color: const Color(0xFFFF0000),
+            ),
+            CurrencyData(
+              symbol: 'CNY',
+              name: 'Chinese Yuan',
+              rate: 1 / rates['CNY']!,
+              imagePath: 'assets/images/currencies/cny.png',
+              color: const Color(0xFFDE2910),
+            ),
+            CurrencyData(
+              symbol: 'INR',
+              name: 'Indian Rupee',
+              rate: 1 / rates['INR']!,
+              imagePath: 'assets/images/currencies/inr.png',
+              color: const Color(0xFFFFA500),
+            ),
+            CurrencyData(
+              symbol: 'AUD',
+              name: 'Australian Dollar',
+              rate: 1 / rates['AUD']!,
+              imagePath: 'assets/images/currencies/aud.png',
+              color: const Color(0xFF003399),
+            ),
+            CurrencyData(
+              symbol: 'CAD',
+              name: 'Canadian Dollar',
+              rate: 1 / rates['CAD']!,
+              imagePath: 'assets/images/currencies/cad.png',
+              color: const Color(0xFFFF0000),
+            ),
+          ];
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('All Currencies'),
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('All Currencies'),
@@ -978,7 +1059,7 @@ class AllCurrenciesPage extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${currency.rate.toStringAsFixed(2)} KZT',
+                  '${NumberFormat('#,##0.00').format(currency.rate)} KZT',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -993,78 +1074,122 @@ class AllCurrenciesPage extends StatelessWidget {
   }
 }
 
-class AllCryptosPage extends StatelessWidget {
+class AllCryptosPage extends StatefulWidget {
   const AllCryptosPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final List<CryptoData> allCryptos = [
-      CryptoData(
-        symbol: 'BTC',
-        name: 'Bitcoin',
-        price: 1835.50 * 432.50, // ~793617.75 KZT
-        imagePath: 'assets/images/cryptos/btc.png',
-        change: 2.5,
-        color: const Color(0xFFF7931A),
-      ),
-      CryptoData(
-        symbol: 'ETH',
-        name: 'Ethereum',
-        price: 2250.00 * 432.50, // ~973125 KZT
-        imagePath: 'assets/images/cryptos/eth.png',
-        change: 3.2,
-        color: const Color(0xFF627EEA),
-      ),
-      CryptoData(
-        symbol: 'BNB',
-        name: 'Binance Coin',
-        price: 612.00 * 432.50, // ~264570 KZT
-        imagePath: 'assets/images/cryptos/bnb.png',
-        change: -1.2,
-        color: const Color(0xFFF3BA2F),
-      ),
-      CryptoData(
-        symbol: 'ADA',
-        name: 'Cardano',
-        price: 0.98 * 432.50, // ~423.85 KZT
-        imagePath: 'assets/images/cryptos/ada.png',
-        change: 1.8,
-        color: const Color(0xFF0033A0),
-      ),
-      CryptoData(
-        symbol: 'SOL',
-        name: 'Solana',
-        price: 195.50 * 432.50, // ~84540.75 KZT
-        imagePath: 'assets/images/cryptos/sol.png',
-        change: 4.1,
-        color: const Color(0xFF14F195),
-      ),
-      CryptoData(
-        symbol: 'DOGE',
-        name: 'Dogecoin',
-        price: 0.42 * 432.50, // ~181.65 KZT
-        imagePath: 'assets/images/cryptos/doge.png',
-        change: -2.3,
-        color: const Color(0xFFC1A93F),
-      ),
-      CryptoData(
-        symbol: 'LTC',
-        name: 'Litecoin',
-        price: 128.75 * 432.50, // ~55673.875 KZT
-        imagePath: 'assets/images/cryptos/ltc.png',
-        change: 1.5,
-        color: const Color(0xFF345D9D),
-      ),
-      CryptoData(
-        symbol: 'LINK',
-        name: 'Chainlink',
-        price: 28.50 * 432.50, // ~12326.25 KZT
-        imagePath: 'assets/images/cryptos/link.png',
-        change: 2.9,
-        color: const Color(0xFF375BD2),
-      ),
-    ];
+  State<AllCryptosPage> createState() => _AllCryptosPageState();
+}
 
+class _AllCryptosPageState extends State<AllCryptosPage> {
+  Map<String, double> rates = {};
+  bool isLoading = true;
+  late List<CryptoData> allCryptos;
+
+  @override
+  void initState() {
+    super.initState();
+    loadRates();
+  }
+
+  Future<void> loadRates() async {
+    try {
+      final response = await http.get(Uri.parse('https://open.er-api.com/v6/latest/KZT'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final Map<String, dynamic> ratesData = data['rates'];
+        setState(() {
+          rates = ratesData.map((k, v) => MapEntry(k, v.toDouble()));
+          double usdToKzt = 1 / rates['USD']!;
+          allCryptos = [
+            CryptoData(
+              symbol: 'BTC',
+              name: 'Bitcoin',
+              price: 1835.50 * usdToKzt,
+              imagePath: 'assets/images/cryptos/btc.png',
+              change: 2.5,
+              color: const Color(0xFFF7931A),
+            ),
+            CryptoData(
+              symbol: 'ETH',
+              name: 'Ethereum',
+              price: 2250.00 * usdToKzt,
+              imagePath: 'assets/images/cryptos/eth.png',
+              change: 3.2,
+              color: const Color(0xFF627EEA),
+            ),
+            CryptoData(
+              symbol: 'BNB',
+              name: 'Binance Coin',
+              price: 612.00 * usdToKzt,
+              imagePath: 'assets/images/cryptos/bnb.png',
+              change: -1.2,
+              color: const Color(0xFFF3BA2F),
+            ),
+            CryptoData(
+              symbol: 'ADA',
+              name: 'Cardano',
+              price: 0.98 * usdToKzt,
+              imagePath: 'assets/images/cryptos/ada.png',
+              change: 1.8,
+              color: const Color(0xFF0033A0),
+            ),
+            CryptoData(
+              symbol: 'SOL',
+              name: 'Solana',
+              price: 195.50 * usdToKzt,
+              imagePath: 'assets/images/cryptos/sol.png',
+              change: 4.1,
+              color: const Color(0xFF14F195),
+            ),
+            CryptoData(
+              symbol: 'DOGE',
+              name: 'Dogecoin',
+              price: 0.42 * usdToKzt,
+              imagePath: 'assets/images/cryptos/doge.png',
+              change: -2.3,
+              color: const Color(0xFFC1A93F),
+            ),
+            CryptoData(
+              symbol: 'LTC',
+              name: 'Litecoin',
+              price: 128.75 * usdToKzt,
+              imagePath: 'assets/images/cryptos/ltc.png',
+              change: 1.5,
+              color: const Color(0xFF345D9D),
+            ),
+            CryptoData(
+              symbol: 'LINK',
+              name: 'Chainlink',
+              price: 28.50 * usdToKzt,
+              imagePath: 'assets/images/cryptos/link.png',
+              change: 2.9,
+              color: const Color(0xFF375BD2),
+            ),
+          ];
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('All Cryptocurrencies'),
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('All Cryptocurrencies'),
@@ -1120,7 +1245,7 @@ class AllCryptosPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '${crypto.price.toStringAsFixed(0)} KZT',
+                      '${NumberFormat('#,##0').format(crypto.price)} KZT',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
