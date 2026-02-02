@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../models/currency_data.dart';
 import '../../services/currency_service.dart';
+import '../../services/auth_service.dart';
 import '../../constants/app_constants.dart';
 import '../components/exchange_card.dart';
 import '../components/currencies_section.dart';
 import '../components/cryptos_section.dart';
+import 'login_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -194,6 +196,32 @@ class _HomePageState extends State<HomePage> {
         centerTitle: false,
         elevation: 0,
         backgroundColor: Colors.transparent,
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) async {
+              if (value == 'logout') {
+                await AuthService.logout();
+                if (context.mounted) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (context) => const LoginPage()),
+                  );
+                }
+              }
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              const PopupMenuItem<String>(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('Выход'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Padding(
